@@ -13,5 +13,6 @@ UCLASS()
 class SIMULATIONRPG_API AHudSrpg : public AHUD
 {
 	GENERATED_BODY()
-	
+public:
+	virtual void DrawHUD() override;
 };
