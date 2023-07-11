@@ -1,12 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 /*
-* Look at this for the HUD
-* https://forums.unrealengine.com/t/how-to-draw-text-from-c/303083
-
-
-https://forums.unrealengine.com/t/create-widget-in-pure-c/367306/19
-
-
+*TODO: 
+-Add a reset function, and map it to the R key.
+-Add score counters
+-Add day limit/end of battle win/lost screen.
 */
 #pragma once
 

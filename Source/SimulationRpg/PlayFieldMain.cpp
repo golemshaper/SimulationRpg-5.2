@@ -311,7 +311,6 @@ void APlayFieldMain::DrawHPNumbers()
 				hud->DrawHp(arrayOfWarriorModels[unitID]->GetActorLocation(), cells[i][j].hp);
 			}
 		}
-
 	}
 }
 void APlayFieldMain::MarkAllTerritory()
@@ -571,7 +570,7 @@ void APlayFieldMain::Tick(float DeltaTime)
 //STATES:
 void APlayFieldMain::PlayerTurnEnter()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("PLAYER TURN START")));
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("PLAYER TURN START")));
 
 	TotalTurnCount++;
 }
@@ -616,7 +615,7 @@ int APlayFieldMain::SpawnAHero(FVector location, bool isHero, int cellGfxID)
 	}
 	if (cellGfxID != -1)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("SHOULD SPAWN IN ANOTHER LOC INSTEAD %i"), cellGfxID));
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("SHOULD SPAWN IN ANOTHER LOC INSTEAD %i"), cellGfxID));
 		//use an old array location instead of adding!
 		arrayOfWarriorModels[cellGfxID] = spawnedActor;
 		return cellGfxID;
