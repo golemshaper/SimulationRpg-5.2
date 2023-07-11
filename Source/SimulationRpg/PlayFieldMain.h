@@ -79,6 +79,8 @@ public:
 	void FloodFill(int x, int y, int fill, int old);
 	void MarkAllTerritory();
 	void RenderMarkedTerritory();
+	void DrawHPNumbers();
+
 	FVector2D GetClosestCellToCursor();
 	FVector workingVectorA;
 	FVector workingVectorB;

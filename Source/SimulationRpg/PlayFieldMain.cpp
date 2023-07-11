@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "HudSrpg.h"
 #include "PlayFieldMain.h"
 
 // Sets default values
@@ -234,15 +234,20 @@ FVector2D APlayFieldMain::GetClosestCellToCursor()
 }
 void APlayFieldMain::RenderMarkedTerritory()
 {
+	
+
 	if (lastTurn == totalTurnNumber)
 	{
+		
 		return;
 	}
 	lastTurn = totalTurnNumber;
+	
 	for (int i = 0; i < cellSize; ++i)
 	{
 		for (int j = 0; j < cellSize; ++j)
 		{
+			bool hasAUnitOnTheTile = false;
 			ATileDisplayObject* tileDisplay = Cast<ATileDisplayObject>(arrayOfGridObjects[cells[i][j].cellGraphicID]);
 			if (tileDisplay != nullptr)tileDisplay->SetTileGraphic(0);
 			//POTENTIALL LIGHT UP HERO OR ENEMY GRIDS, OR SKIP THEM
@@ -252,14 +257,16 @@ void APlayFieldMain::RenderMarkedTerritory()
 				{
 					//MARK ground the hero is standing on.
 					if (tileDisplay != nullptr)tileDisplay->SetTileGraphic(1);
+					hasAUnitOnTheTile = true;
 
 				}
 				if (cells[i][j].CellData == enemyPiece)
 				{
 					//MARK ground the enemy is standing on.
 					if (tileDisplay != nullptr)tileDisplay->SetTileGraphic(2);
+					hasAUnitOnTheTile = true;
 				}
-
+				
 				continue; //only mark up the empty space, not the space a unit occupies
 			}
 			//MARK TERRITORY
@@ -275,7 +282,36 @@ void APlayFieldMain::RenderMarkedTerritory()
 				//MARK TERRITORY
 				if (tileDisplay != nullptr)tileDisplay->SetTileGraphic(2);
 			}
+
+			
 		}
+	}
+}
+void APlayFieldMain::DrawHPNumbers()
+{
+	//DRAW HP
+	AHudSrpg* hud = Cast<AHudSrpg>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	if (hud != nullptr)
+	{
+		hud->ClearHp();
+	}
+	for (int i = 0; i < cellSize; ++i)
+	{
+		for (int j = 0; j < cellSize; ++j)
+		{
+			bool hasAUnitOnTheTile = false;
+			if (cells[i][j].CellData != neutralPiece)
+			{
+				hasAUnitOnTheTile = true;
+			}
+			if (hasAUnitOnTheTile && hud != nullptr)
+			{
+				int unitID = cells[i][j].unitGraphicID;
+
+				hud->DrawHp(arrayOfWarriorModels[unitID]->GetActorLocation(), cells[i][j].hp);
+			}
+		}
+
 	}
 }
 void APlayFieldMain::MarkAllTerritory()
@@ -527,7 +563,8 @@ void APlayFieldMain::Tick(float DeltaTime)
 	//FLOOD FILL
 	MarkAllTerritory();
 	RenderMarkedTerritory();
-	
+	//DRAW HUD:
+	DrawHPNumbers();
 }
 
 
