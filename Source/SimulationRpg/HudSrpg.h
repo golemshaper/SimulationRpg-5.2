@@ -21,4 +21,7 @@ public:
 	void ClearHp();
 	void DrawHp(FVector pair, int nHp);
 	FVector2D Project(FVector WorldLocation);
+	//interface with editor:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Font)
+		UFont* workingFont;
 };

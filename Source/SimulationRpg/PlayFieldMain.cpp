@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-#include "HudSrpg.h"
 #include "PlayFieldMain.h"
+#include "HudSrpg.h"
 
 // Sets default values
 APlayFieldMain::APlayFieldMain()
@@ -65,7 +64,7 @@ void APlayFieldMain::BeginPlay()
 	//SET INITIAL STATE
 	StateMachine->SetState(State::playerTurn);
 	
-	StateMachine->timeMultiplier = 3.0f;
+	StateMachine->timeMultiplier = 9.0f; //was 3.
 	//Smoothly transition to our actor on begin play.
 	//OurPlayerController->SetViewTargetWithBlend(this , 2.f);
 	// 
@@ -735,7 +734,8 @@ void APlayFieldMain::HerosAttack()
 }
 void APlayFieldMain::HerosAttackUpdate()
 {
-	ProccessAttacks(heroPiece,enemyPiece, (int)State::enemyTurn, 2.0f*dt);
+	ProccessAttacks(heroPiece, enemyPiece, (int)State::enemyTurn, 7.0f * dt);
+	//ProccessAttacks(heroPiece,enemyPiece, (int)State::enemyTurn, 6.0f*dt);
 }
 
 void APlayFieldMain::SpawnEnemyOnSkyDrop()
@@ -771,7 +771,8 @@ void APlayFieldMain::EnemiesAttack()
 }
 void APlayFieldMain::EnemiesAttackUpdate()
 {
-	ProccessAttacks(enemyPiece,heroPiece, (int)State::playerTurn, 2.0f * dt);
+	ProccessAttacks(enemyPiece, heroPiece, (int)State::playerTurn, 7.0f * dt);
+	//ProccessAttacks(enemyPiece,heroPiece, (int)State::playerTurn, 6.0f * dt);
 
 }
 void APlayFieldMain::EmptyFunction()
@@ -939,7 +940,7 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			//TODO: ANIMATE ATTACK SQUASH AND STRETCH
 			if (attackStateTimer >= 1.0f)
 			{
-
+				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
 				attackStateTimer = 0.0f;
 				AttackSubState = animateHurt;
 			}
@@ -957,6 +958,7 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 
 			if (attackStateTimer >= 1.0f)
 			{
+				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
 				//HURT THE ACTOR
 				cells[currentAttackTarget.X][currentAttackTarget.Y].hp -= cells[x][y].atk;
 				//TODO IF DEAD, DESTROY AND SPAWN EXPLOSION
