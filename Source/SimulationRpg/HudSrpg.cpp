@@ -21,7 +21,8 @@ void AHudSrpg::DrawHUD()
 	{
 		FVector2D ScreenLocation = Project(coordinates[i]);
 		//this->DrawText(FString::FromInt(hpArray[i]), FColor::White, ScreenLocation.X, ScreenLocation.Y, font_ptr, 1.0f);
-		this->DrawText(FString::FromInt(hpArray[i]), FColor::White, ScreenLocation.X, ScreenLocation.Y, workingFont, 1.5f);
+		this->DrawText(FString::FromInt(hpArray[i]), FColor::Black, ScreenLocation.X+1, ScreenLocation.Y+1, workingFont, 1.0f);
+		this->DrawText(FString::FromInt(hpArray[i]), FColor::White, ScreenLocation.X, ScreenLocation.Y, workingFont, 1.0f);
 	}
 
 }

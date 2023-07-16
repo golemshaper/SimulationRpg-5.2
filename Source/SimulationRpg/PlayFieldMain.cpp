@@ -113,17 +113,32 @@ void APlayFieldMain::BeginPlay()
 }
 void APlayFieldMain::ResetBoard()
 {
+	AHudSrpg* hud = Cast<AHudSrpg>(GetWorld()->GetFirstPlayerController()->GetHUD());
+	if (hud != nullptr)
+	{
+		hud->ClearHp();
+	}
+
+	lastTurn = - 1;
 	TotalTurnCount = 0;
 	PlayerScore = 0;
 	PlayerKillScore = 0;
 	EnemyScore = 0;
 	EnemyKillScore = 0;
 	GetEnemyIdealPositionsFromPattern(aiParser.GetPatternData());
-	//TODO: Repool old Hero models
-	//TODO: Repool old Enemy models
+
+	//DESTROY SPAWNED UNITS
+	for (int i = 0; i < arrayOfWarriorModels.Num(); ++i)
+	{
+		if(arrayOfWarriorModels[i]!=nullptr)arrayOfWarriorModels[i]->Destroy();
+	}
+	arrayOfWarriorModels.Empty();
+
+
 	MarkAllTerritory();
 	RenderMarkedTerritory();
 	CountTerritoryScore();
+
 	for (int i = 0; i < cellSize; ++i)
 	{
 		for (int j = 0; j < cellSize; ++j)
@@ -135,6 +150,8 @@ void APlayFieldMain::ResetBoard()
 			cells[i][j].unitGraphicID = -1; //TODO, ONLY ASSIGN NEW ID if -1, OTHERWISE USE THE CELS CURRENT ID, AND DESTROY ACTOR IN THAT PALCE AND SPAWN A NEW ACTOR
 		}
 	}
+	//RESET STATE
+	StateMachine->SetState(State::playerTurn);
 }
 void APlayFieldMain::CountTerritoryScore()
 {
@@ -306,7 +323,7 @@ void APlayFieldMain::DrawHPNumbers()
 			if (hasAUnitOnTheTile && hud != nullptr)
 			{
 				int unitID = cells[i][j].unitGraphicID;
-
+				if (unitID == -1)return;
 				hud->DrawHp(arrayOfWarriorModels[unitID]->GetActorLocation(), cells[i][j].hp);
 			}
 		}
@@ -474,11 +491,11 @@ void APlayFieldMain::PlaceEnemyByPattern()
 				potentialX.Add(playAtPosition.X);
 				potentialY.Add(playAtPosition.Y);
 
-				if (cells[playAtPosition.X + 1][ playAtPosition.Y].CellData == neutralPiece)
+				if (cells[playAtPosition.X + 1][playAtPosition.Y].CellData == neutralPiece)
 				{
 					potentialX.Add(playAtPosition.X + 1);
 				}
-				if (cells[playAtPosition.X - 1][ playAtPosition.Y].CellData == neutralPiece)
+				if (cells[playAtPosition.X - 1][playAtPosition.Y].CellData == neutralPiece)
 				{
 					potentialX.Add(playAtPosition.X - 1);
 				}
@@ -494,7 +511,7 @@ void APlayFieldMain::PlaceEnemyByPattern()
 				int selectNY = FMath::RandRange(0, potentialY.Num() - 1);
 				playAtPosition.X = potentialX[selectNX];
 				playAtPosition.Y = potentialY[selectNY];
-				
+
 			}
 		}
 	}
@@ -524,7 +541,7 @@ CoordinatePairs APlayFieldMain::PickRandomFreeCell(int fallbackX, int fallbackY,
 	while (numberOfTries > 0)
 	{
 		numberOfTries--;
-		result.X = FMath::RandRange(0,cellSize - 1);
+		result.X = FMath::RandRange(0, cellSize - 1);
 		result.Y = FMath::RandRange(0, cellSize - 1);
 		if (cells[result.X][result.Y].CellData == neutralPiece)
 		{
@@ -537,14 +554,17 @@ CoordinatePairs APlayFieldMain::PickRandomFreeCell(int fallbackX, int fallbackY,
 // Called every frame
 void APlayFieldMain::Tick(float DeltaTime)
 {
+	
+
 	dt = DeltaTime;
+	
 	Super::Tick(DeltaTime);
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("STATE:%i"),StateMachine->GetState()));
 
 	StateMachine->UpdateTick(DeltaTime);
 
 	bool skipAttackAnimations = GetSkipButton();
-	if (skipAttackAnimations && StateMachine->GetState()!=State::playerTurn)
+	if (skipAttackAnimations && StateMachine->GetState() != State::playerTurn)
 	{
 		//update twice for each turn played until the state is the player turn state. This will skip every animation, and skip the little pause
 		for (int i = 0; i < TotalTurnCount * 2; i++)
@@ -563,6 +583,9 @@ void APlayFieldMain::Tick(float DeltaTime)
 	RenderMarkedTerritory();
 	//DRAW HUD:
 	DrawHPNumbers();
+
+
+	
 }
 
 
@@ -625,6 +648,17 @@ int APlayFieldMain::SpawnAHero(FVector location, bool isHero, int cellGfxID)
 }
 void APlayFieldMain::PlayerUpdate()
 {
+	//Used for mouse click and for reset...
+	APlayerController* OurPlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	if (OurPlayerController == nullptr)return; //just in case...
+	//RESET
+	FKey resetKey = EKeys::R;
+	if (OurPlayerController->IsInputKeyDown(resetKey))
+	{
+		ResetBoard();
+		return;
+	}
+
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("PLAYER TURN UPDATE")));
 
 
@@ -658,9 +692,13 @@ void APlayFieldMain::PlayerUpdate()
 	arrayOfGridObjects[cellGfxID]->SetActorScale3D(FVector(1.25, 1.25, 1.25));
 
 	//MOUSE DOWN:
-	APlayerController* OurPlayerController = UGameplayStatics::GetPlayerController(this, 0);
 	FKey key = EKeys::LeftMouseButton;
 	bool down = OurPlayerController->IsInputKeyDown(key);
+
+
+
+
+
 
 	//TODO: LIMIT ONCE UNTIL CURSOR MOVES
 	bool endTurn = false;
@@ -702,6 +740,7 @@ void APlayFieldMain::DropFromSkyPlayerUnit()
 
 	FVector currentVec = FMath::Lerp(workingVectorA, workingVectorB, StateMachine->GetTimeInState());
 	int unitID = cells[HeroLastCoordinate.X][HeroLastCoordinate.Y].unitGraphicID;
+	if (unitID == -1)return;
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("%iSPAWN GFX ID %i,%i"), unitID, HeroLastCoordinate.X, HeroLastCoordinate.Y));
 
 	arrayOfWarriorModels[unitID]->SetActorLocation(currentVec);
@@ -753,6 +792,7 @@ void APlayFieldMain::DropFromSkyEnemyUnit()
 	if (skipAttackAnimations)StateMachine->SetTimeInState(1.0f);
 	FVector currentVec = FMath::Lerp(workingVectorA, workingVectorB, StateMachine->GetTimeInState());
 	int unitID = cells[EnemyLastCoordinate.X][EnemyLastCoordinate.Y].unitGraphicID;
+	if (unitID == -1)return;
 	arrayOfWarriorModels[unitID]->SetActorLocation(currentVec);
 	
 	if (StateMachine->GetTimeInState() >= 1.0f)
@@ -823,6 +863,7 @@ void APlayFieldMain::SquashAnimation(AActor* attacker, FVector initScale, FVecto
 	}
 	attacker->SetActorScale3D(result);
 }
+
 void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderTeam, int stateOnEnd,float DeltaTime)
 {
 	const int start = 0;
@@ -941,6 +982,7 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			if (attackStateTimer >= 1.0f)
 			{
 				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
+				arrayOfWarriorModels[unitGfxID_Defender]->SetActorScale3D(FVector(1, 1, 1));
 				attackStateTimer = 0.0f;
 				AttackSubState = animateHurt;
 			}
@@ -959,6 +1001,7 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			if (attackStateTimer >= 1.0f)
 			{
 				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
+				arrayOfWarriorModels[unitGfxID_Defender]->SetActorScale3D(FVector(1, 1, 1));
 				//HURT THE ACTOR
 				cells[currentAttackTarget.X][currentAttackTarget.Y].hp -= cells[x][y].atk;
 				//TODO IF DEAD, DESTROY AND SPAWN EXPLOSION
@@ -981,7 +1024,6 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 
 			//increment current attackAngles[x] x value.
 			//then set to state 1 if not at the end of the attackAngles
-
 			AttackListIndex++;
 			if (AttackListIndex > 4)
 			{

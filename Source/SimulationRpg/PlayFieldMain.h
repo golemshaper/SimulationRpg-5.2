@@ -168,4 +168,5 @@ public:
 	void SquashAnimation(AActor* attacker,FVector initScale, FVector maxSize, float progress);
 	bool GetSkipButton();
 	
+	
 };
