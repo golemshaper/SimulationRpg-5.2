@@ -48,6 +48,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameSRPG")
 		class AActor* cursorObject;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameSRPG")
+		class AActor* debugCursor;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameSRPG")
 		TSubclassOf<class AActor> cursorObjectTemplate;
 	//
 	UPROPERTY(EditAnywhere)
@@ -167,6 +169,6 @@ public:
 	void ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderTeam, int stateOnEnd, float DeltaTime);
 	void SquashAnimation(AActor* attacker,FVector initScale, FVector maxSize, float progress);
 	bool GetSkipButton();
-	
+	bool IsActorTouchingATarget(int x, int y, int attackPatternType,int size,int myTeamsID);
 	
 };

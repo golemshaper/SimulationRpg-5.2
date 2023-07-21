@@ -94,6 +94,8 @@ void APlayFieldMain::BeginPlay()
 	AActor* nCursor = World->SpawnActor<AActor>(cursorObjectTemplate, FVector(0, 0, 0), FRotator(0,0,0));
 	cursorObject = nCursor;
 
+	AActor* nDebugCursor = World->SpawnActor<AActor>(cursorObjectTemplate, FVector(0, 0, 0), FRotator(0, 0, 0));
+	debugCursor = nDebugCursor;
 
 	//Example of referencing cell graphics:
 	int cellGfxID = cells[0][0].cellGraphicID;
@@ -826,18 +828,55 @@ void APlayFieldMain::ProccessAttacksReset(int idOfAttackerTeam)
 	attackStateTimer = 0.0f;
 	CurrentAttackerFlatIndex = 0;
 	PopulatedCells.Empty();
+
+	bool hasAddedAtLeastOnce = false;
 	for (int i = 0; i < cellSize; ++i)
 	{
 		for (int j = 0; j < cellSize; ++j)
 		{
+			//use normal attack list for now. Change to different attack type once archers and the like are implemented.
 			if (cells[i][j].CellData == idOfAttackerTeam)
 			{
+				if (IsActorTouchingATarget(i, j, 0, 3, idOfAttackerTeam) == false)
+				{
+					//THIS DOESNT WORK YET. FIGURE OUT WHY LATER!
+				//	if(hasAddedAtLeastOnce)continue; //skip if not touching another actor
+				}
 				PopulatedCells.Add(CoordinatePairs(i, j));
+				hasAddedAtLeastOnce = true; //We need at least one in the list, so be sure to only skip ones not touching after adding one!
 			}
 		}
 	}
 }
+bool APlayFieldMain::IsActorTouchingATarget(int x, int y,int attackPatternType, int size, int myTeamsID)
+{
+	
+	for (int i = 0; i < size; i++)
+	{
+		int nX = attack_list_normal[i].X; //should be dirList[] when you can get that working... or go off of attackPatternType later when you add more patterns...
+		int nY = attack_list_normal[i].Y; //should be dirList[] when you can get that working...
+		//BOUNDS CHECK
+		if (x + nX > cellSize)continue;
+		if (y + nY > cellSize)continue;
+		if (x + nX < 0)continue;
+		if (y + nY < 0)continue;
+		if (x + nX == x)continue;
+		if (y + nY == x)continue;
 
+		if (cells[x + nX][y + nY].CellData == myTeamsID)
+		{
+			continue;
+		}
+
+		if (cells[x+nX][y+nY].CellData != 0)
+		{
+			return true;
+		}
+
+	}
+
+	return false;
+}
 bool APlayFieldMain::GetSkipButton()
 {
 	APlayerController* OurPlayerController = UGameplayStatics::GetPlayerController(this, 0);
@@ -890,6 +929,8 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 		//skip animations
 		attackStateTimer = 1.0f;
 	}
+	//SHOW WHERE THE COMPUTER IS THINKING...
+	if (debugCursor != nullptr)debugCursor->SetActorLocation(arrayOfGridObjects[cells[x][y].cellGraphicID]->GetActorLocation());
 
 	switch (AttackSubState)
 	{
