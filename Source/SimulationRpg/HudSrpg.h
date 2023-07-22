@@ -24,4 +24,6 @@ public:
 	//interface with editor:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Font)
 		UFont* workingFont;
+
+
 };

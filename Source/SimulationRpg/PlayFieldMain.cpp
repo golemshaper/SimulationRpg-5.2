@@ -601,6 +601,8 @@ void APlayFieldMain::PlayerTurnEnter()
 void APlayFieldMain::CursorUpdate()
 {
 	this->CursorPosSet();
+	AHudSrpg* hud = Cast<AHudSrpg>(GetWorld()->GetFirstPlayerController()->GetHUD());
+
 	//RESET SCALE
 	for (int i = 0; i < cellSize; ++i)
 	{
@@ -608,6 +610,7 @@ void APlayFieldMain::CursorUpdate()
 		{
 			if (cells[i][j].CellData != 0) {
 				arrayOfGridObjects[cells[i][j].cellGraphicID]->SetActorScale3D(FVector(1, 1, 1));
+			
 				continue;
 			}
 			arrayOfGridObjects[cells[i][j].cellGraphicID]->SetActorScale3D(FVector(0.25, 0.25, 0.25));
@@ -619,6 +622,17 @@ void APlayFieldMain::CursorUpdate()
 	//HIGHLIGHT CLOSEST TO CURSOR
 	FVector2D selectGridVec = this->GetClosestCellToCursor();
 	int cellGfxID = cells[selectGridVec.IntPoint().X][selectGridVec.IntPoint().Y].cellGraphicID;
+
+	// DEBUG THE ACTOR UNDER CURSOR
+	/**/int result = 0;
+	if (IsActorTouchingATarget(selectGridVec.IntPoint().X, selectGridVec.IntPoint().Y, 0, 4, cells[selectGridVec.IntPoint().X][selectGridVec.IntPoint().Y].CellData) == true)
+	{
+		result = 1;
+	}
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%i,%i touching:%i"), selectGridVec.IntPoint().X, selectGridVec.IntPoint().Y, result));
+	// DEBUG THE ACTOR UNDER CURSOR
+
+
 	arrayOfGridObjects[cellGfxID]->SetActorScale3D(FVector(1.25, 1.25, 1.25));
 }
 int APlayFieldMain::SpawnAHero(FVector location, bool isHero, int cellGfxID)
@@ -837,10 +851,10 @@ void APlayFieldMain::ProccessAttacksReset(int idOfAttackerTeam)
 			//use normal attack list for now. Change to different attack type once archers and the like are implemented.
 			if (cells[i][j].CellData == idOfAttackerTeam)
 			{
-				if (IsActorTouchingATarget(i, j, 0, 3, idOfAttackerTeam) == false)
+				if (IsActorTouchingATarget(i, j, 0, 4, idOfAttackerTeam) == false)
 				{
 					//THIS DOESNT WORK YET. FIGURE OUT WHY LATER!
-				//	if(hasAddedAtLeastOnce)continue; //skip if not touching another actor
+					if(hasAddedAtLeastOnce)continue; //skip if not touching another actor
 				}
 				PopulatedCells.Add(CoordinatePairs(i, j));
 				hasAddedAtLeastOnce = true; //We need at least one in the list, so be sure to only skip ones not touching after adding one!
@@ -855,24 +869,16 @@ bool APlayFieldMain::IsActorTouchingATarget(int x, int y,int attackPatternType, 
 	{
 		int nX = attack_list_normal[i].X; //should be dirList[] when you can get that working... or go off of attackPatternType later when you add more patterns...
 		int nY = attack_list_normal[i].Y; //should be dirList[] when you can get that working...
-		//BOUNDS CHECK
-		if (x + nX > cellSize)continue;
-		if (y + nY > cellSize)continue;
+	
+		if (x + nX >= cellSize)continue;
+		if (y + nY >= cellSize)continue;
 		if (x + nX < 0)continue;
-		if (y + nY < 0)continue;
-		if (x + nX == x)continue;
-		if (y + nY == x)continue;
-
-		if (cells[x + nX][y + nY].CellData == myTeamsID)
-		{
-			continue;
-		}
-
-		if (cells[x+nX][y+nY].CellData != 0)
+		if (y + nY < 0 )continue;
+	
+		if (cells[x+nX][y+nY].CellData != myTeamsID && cells[x + nX][y + nY].CellData != 0)
 		{
 			return true;
 		}
-
 	}
 
 	return false;
