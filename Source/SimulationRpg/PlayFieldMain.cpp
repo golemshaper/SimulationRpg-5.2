@@ -164,7 +164,7 @@ void APlayFieldMain::CountTerritoryScore()
 	{
 		for (int j = 0; j < cellSize; ++j)
 		{
-			if (cells[i][j].CellData == heroPiece)
+			/*if(cells[i][j].CellData == heroPiece)
 			{
 				PlayerScore++;
 			}
@@ -172,13 +172,13 @@ void APlayFieldMain::CountTerritoryScore()
 			{
 				EnemyScore++;
 			}
-
-			if (cells[i][j].CellData == neutralPiece)
+			*/
+			if (cells[i][j].TempData == neutralPiece)
 			{
 				NeutralScore++;
 			}
 
-			if (cells[i][j].CellData == fillPieceEnemy)
+			if (cells[i][j].TempData == fillPieceEnemy)
 			{
 				EnemyScore++;
 			}
@@ -188,6 +188,8 @@ void APlayFieldMain::CountTerritoryScore()
 			}
 		}
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("PLAYER %i, ENEMY %i, NEUTRAL%i"), PlayerScore, EnemyScore, NeutralScore));
+
 }
 
 
@@ -333,6 +335,51 @@ void APlayFieldMain::DrawHPNumbers()
 }
 void APlayFieldMain::MarkAllTerritory()
 {
+	this->playerFill = 0;
+	this->enemyFill = 0;
+
+
+	//neutral space
+	this->FloodFill(1, 1, 0, fillPieceHero);
+	this->FloodFill(1, cellSize - 1, 0, fillPieceHero);
+	this->FloodFill(cellSize - 1, 1, 0, fillPieceHero);
+	this->FloodFill(cellSize - 1, cellSize - 1, 0, fillPieceHero);
+	//neutral space 2
+	this->FloodFill(1, 1, 0, fillPieceEnemy);
+	this->FloodFill(1, cellSize - 1, 0, fillPieceEnemy);
+	this->FloodFill(cellSize - 1, 1, 0, fillPieceEnemy);
+	this->FloodFill(cellSize - 1, cellSize - 1, 0, fillPieceEnemy);
+
+
+
+	for (int i = 0; i < cellSize; ++i)
+	{
+		for (int j = 0; j < cellSize; ++j)
+		{
+
+			this->playerFill = 0;
+			this->enemyFill = 0;
+			
+			//this->FloodFill(i, j, fillPieceHero, 0);
+			//this->FloodFill(i, j, fillPieceEnemy, 0);
+			this->FloodFill(j, i, fillPieceHero, 0);
+			if (enemyFill > playerFill)
+			{
+				this->FloodFill(i, j, fillPieceEnemy, fillPieceHero);
+
+			}
+			
+			
+
+		}
+	}
+
+
+
+
+
+	/* old broken
+	* 
 	for (int i = 0; i < cellSize; ++i)
 	{
 		for (int j = 0; j < cellSize; ++j)
@@ -340,13 +387,21 @@ void APlayFieldMain::MarkAllTerritory()
 			this->playerFill = 0;
 			this->enemyFill = 0;
 
-			this->FloodFill(i, j, fillPieceHero, 0);
+			//this->FloodFill(i, j, fillPieceHero, 0);
+			//this->FloodFill(i, j, fillPieceEnemy, 0);
+
 			if (enemyFill > playerFill)
 			{
 				//redraw, but in the enemy color
 				this->FloodFill(i, j, fillPieceEnemy, fillPieceHero);
+				this->FloodFill(i, j, fillPieceEnemy, 0);
 			}
-			
+			else
+			{
+				this->FloodFill(i, j, fillPieceEnemy, fillPieceEnemy);
+				this->FloodFill(i, j, fillPieceHero, 0);
+			}
+		
 			//neutral space
 			this->FloodFill(1, 1, 0, fillPieceHero);
 			this->FloodFill(1, cellSize - 1, 0, fillPieceHero);
@@ -359,7 +414,7 @@ void APlayFieldMain::MarkAllTerritory()
 			this->FloodFill(cellSize - 1, cellSize - 1, 0, fillPieceEnemy);
 			
 		}
-	}
+	}*/
 }
 void APlayFieldMain::FloodFill(int x, int y, int fill, int old)
 {
@@ -374,17 +429,36 @@ void APlayFieldMain::FloodFill(int x, int y, int fill, int old)
 		this->FloodFill(x, y + 1, fill, old);
 		this->FloodFill(x - 1, y, fill, old);
 		this->FloodFill(x, y - 1, fill, old);
+
+
+		
 	}
 	else
 	{
 		//find out who's territory it is using these variables
-		if (this->cells[x][y].TempData == heroPiece)
+		if (cells[x][y].TempData == heroPiece)
 		{
-			this->playerFill++;
+			//playerFill++;
 		}
-		if (this->cells[x][y].TempData == enemyPiece)
+		if (cells[x][y].CellData == heroPiece)
 		{
-			this->enemyFill++;
+			playerFill++;
+		}
+		if (cells[x][y].TempData == fillPieceHero)
+		{
+			//playerFill++;
+		}
+		if (cells[x][y].TempData == enemyPiece)
+		{
+			//enemyFill++;
+		}
+		if (cells[x][y].CellData == enemyPiece)
+		{
+			enemyFill++;
+		}
+		if (cells[x][y].TempData == fillPieceEnemy)
+		{
+			//enemyFill++;
 		}
 	}
 	
@@ -428,10 +502,23 @@ void APlayFieldMain::PlaceEnemyByPattern()
 {
 	//float curDistance = FVector::Distance(arrayOfGridObjects[i]->GetActorLocation(), cursorObject->GetActorLocation());
 	FVector lastPlayedPos = FVector(HeroLastCoordinate.X * multiplier, HeroLastCoordinate.Y * multiplier, 0);
+
+	float chanceOfPlayingAConnectedPiece = FMath::RandRange(0.0f, 100.0f);
+	if (chanceOfPlayingAConnectedPiece > 60)
+	{
+		//build territory instead of attacking
+		lastPlayedPos.X = EnemyLastCoordinate.X;
+		lastPlayedPos.Y = EnemyLastCoordinate.Y;
+	}
+
+
+
+
 	float shortestDist = 999999.0f;
 	CoordinatePairs playAtPosition;
 	playAtPosition.Set(0, 0);
 	bool foundALocation = false;
+
 	//AI_CellOutout instead of potentialPattern from the OG version of the game I think.
 	for (int i = 0; i < cellSize; ++i)
 	{
@@ -525,6 +612,7 @@ void APlayFieldMain::PlaceEnemyByPattern()
 		playAtPosition.Y = randomPlay.Y;
 	}
 	//-----------------------------------------------------------------
+	
 	cells[playAtPosition.X][playAtPosition.Y].CellData = enemyPiece;
 	cells[playAtPosition.X][playAtPosition.Y].hp = 8;
 	cells[playAtPosition.X][playAtPosition.Y].atk = 1;
@@ -585,8 +673,8 @@ void APlayFieldMain::Tick(float DeltaTime)
 	RenderMarkedTerritory();
 	//DRAW HUD:
 	DrawHPNumbers();
-
-
+	//SCORE:
+	CountTerritoryScore();
 	
 }
 
@@ -629,7 +717,7 @@ void APlayFieldMain::CursorUpdate()
 	{
 		result = 1;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%i,%i touching:%i"), selectGridVec.IntPoint().X, selectGridVec.IntPoint().Y, result));
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%i,%i touching:%i"), selectGridVec.IntPoint().X, selectGridVec.IntPoint().Y, result));
 	// DEBUG THE ACTOR UNDER CURSOR
 
 
@@ -911,6 +999,11 @@ void APlayFieldMain::SquashAnimation(AActor* attacker, FVector initScale, FVecto
 
 void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderTeam, int stateOnEnd,float DeltaTime)
 {
+	if (CurrentAttackerFlatIndex >= PopulatedCells.Num())
+	{
+		StateMachine->SetState(stateOnEnd);
+		return;
+	}
 	const int start = 0;
 	const int lookAtTarget = 1;
 	const int animateAttack = 2;
@@ -1022,8 +1115,17 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			attackStateTimer += 2 * DeltaTime;
 			//animate squash
 			unitGfxID_Attacker = cells[x][y].unitGraphicID; //must be assigned in every state that uses it!
+
+			if (unitGfxID_Attacker > arrayOfWarriorModels.Num())
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("ERROR ERROR ERROR 123")));
+				return;
+			}
+
+
 			SquashAnimation(arrayOfWarriorModels[unitGfxID_Attacker],FVector(1,1,1),FVector(0.65f,0.65f,1.35f), attackStateTimer);
 
+			
 			//Animate Attack
 			//TODO: ANIMATE ATTACK SQUASH AND STRETCH
 			if (attackStateTimer >= 1.0f)
