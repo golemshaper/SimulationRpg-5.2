@@ -674,7 +674,7 @@ void APlayFieldMain::Tick(float DeltaTime)
 	//DRAW HUD:
 	DrawHPNumbers();
 	//SCORE:
-	CountTerritoryScore();
+	
 	
 }
 
@@ -731,6 +731,12 @@ int APlayFieldMain::SpawnAHero(FVector location, bool isHero, int cellGfxID)
 
 	UWorld* const World = GetWorld();
 	AActor* spawnedActor = nullptr;
+	if (cellGfxID != -1)
+	{
+		//tf is this?
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT(">>y SHOULD SPAWN IN ANOTHER LOC INSTEAD %i"), cellGfxID));
+		//return cellGfxID;
+	}
 	if (isHero)
 	{
 		spawnedActor = World->SpawnActor<AActor>(basicWarriorTemplate, workingVectorA, FRotator().ZeroRotator);
@@ -739,15 +745,12 @@ int APlayFieldMain::SpawnAHero(FVector location, bool isHero, int cellGfxID)
 	{
 		spawnedActor = World->SpawnActor<AActor>(basicWarriorEnemyTemplate, workingVectorA, FRotator().ZeroRotator);
 	}
-	if (cellGfxID != -1)
-	{
-		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("SHOULD SPAWN IN ANOTHER LOC INSTEAD %i"), cellGfxID));
-		//use an old array location instead of adding!
-		arrayOfWarriorModels[cellGfxID] = spawnedActor;
-		return cellGfxID;
-	}
 	
-	arrayOfWarriorModels.Add(spawnedActor);
+	
+	if (spawnedActor != nullptr)arrayOfWarriorModels.Add(spawnedActor);
+
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("..x SHOULD SPAWN IN ANOTHER LOC INSTEAD array:%i,cellGfxId:%i"), arrayOfWarriorModels.Num(), cellGfxID));
+
 	return arrayOfWarriorModels.Num()-1;
 }
 void APlayFieldMain::PlayerUpdate()
@@ -780,6 +783,7 @@ void APlayFieldMain::PlayerUpdate()
 	{
 		for (int j = 0; j < cellSize; ++j)
 		{
+			
 			if (cells[i][j].CellData != 0) {
 				arrayOfGridObjects[cells[i][j].cellGraphicID]->SetActorScale3D(FVector(1, 1, 1));
 				continue;
@@ -999,7 +1003,13 @@ void APlayFieldMain::SquashAnimation(AActor* attacker, FVector initScale, FVecto
 
 void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderTeam, int stateOnEnd,float DeltaTime)
 {
+	
 	if (CurrentAttackerFlatIndex >= PopulatedCells.Num())
+	{
+		StateMachine->SetState(stateOnEnd);
+		return;
+	}
+	if (CurrentAttackerFlatIndex <= -1)
 	{
 		StateMachine->SetState(stateOnEnd);
 		return;
@@ -1020,7 +1030,10 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 	FRotator StartRot = FRotator().ZeroRotator;
 	FRotator DummyRot = FRotator().ZeroRotator;
 
-
+	if (cells[x][y].unitGraphicID > arrayOfWarriorModels.Num())
+	{
+		return;
+	}
 
 	bool skipAttackAnimations = GetSkipButton();
 	if (skipAttackAnimations)
@@ -1130,6 +1143,9 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			//TODO: ANIMATE ATTACK SQUASH AND STRETCH
 			if (attackStateTimer >= 1.0f)
 			{
+				if (unitGfxID_Attacker <= -1)return;
+				if (unitGfxID_Attacker > arrayOfWarriorModels.Num())return;
+				if (arrayOfWarriorModels[unitGfxID_Attacker] == nullptr)return;
 				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
 				arrayOfWarriorModels[unitGfxID_Defender]->SetActorScale3D(FVector(1, 1, 1));
 				attackStateTimer = 0.0f;
@@ -1149,15 +1165,15 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 
 			if (attackStateTimer >= 1.0f)
 			{
-				arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
-				arrayOfWarriorModels[unitGfxID_Defender]->SetActorScale3D(FVector(1, 1, 1));
+				if (arrayOfWarriorModels[unitGfxID_Defender] != nullptr)arrayOfWarriorModels[unitGfxID_Attacker]->SetActorScale3D(FVector(1, 1, 1));
+				if(arrayOfWarriorModels[unitGfxID_Defender]!=nullptr)arrayOfWarriorModels[unitGfxID_Defender]->SetActorScale3D(FVector(1, 1, 1));
 				//HURT THE ACTOR
 				cells[currentAttackTarget.X][currentAttackTarget.Y].hp -= cells[x][y].atk;
 				//TODO IF DEAD, DESTROY AND SPAWN EXPLOSION
 				if (cells[currentAttackTarget.X][currentAttackTarget.Y].hp <= 0)
 				{
 					//arrayOfWarriorModels[unitGfxID_Defender]->SetActorHiddenInGame(true);
-					arrayOfWarriorModels[unitGfxID_Defender]->Destroy();
+					if(arrayOfWarriorModels[unitGfxID_Defender]!=nullptr)arrayOfWarriorModels[unitGfxID_Defender]->Destroy();
 					cells[currentAttackTarget.X][currentAttackTarget.Y].CellData = neutralPiece;
 					cells[currentAttackTarget.X][currentAttackTarget.Y].TempData = neutralPiece;
 				}
@@ -1219,6 +1235,7 @@ void APlayFieldMain::ProccessAttacks(int32 idOfAttackerTeam, int32 idOfDefenderT
 			
 			if (CurrentAttackerFlatIndex >= PopulatedCells.Num())
 			{
+				CountTerritoryScore();
 				StateMachine->SetState(stateOnEnd);
 				return;
 			}
